@@ -13,10 +13,10 @@ var btnMul = document.getElementById('btnMul');
 var btnDiv = document.getElementById('btnDiv');
 var btnLef = document.getElementById('btnLeft');
 var btnRig = document.getElementById('btnRigth');
+var btnVar = document.getElementById('btnVar');
 
 var res = document.getElementById('res');
-var q = [];
-var s = [];
+
 
 var num_buttons = [];
 function init_num_buttons(){
@@ -38,24 +38,21 @@ function init_num_buttons(){
 init_num_buttons();
 
 
-var current_op = '';
-
 btnClr.onclick = function() {
     res.innerHTML = '';
-    current_op = '';
+
 };
 
 btnSub.onclick = function() {
     res.innerHTML = res.innerHTML+'-';
-    current_op = '-';
+
 };
 btnMul.onclick = function() {
     res.innerHTML = res.innerHTML+'*';
-    current_op = '*';
+
 };
 btnDiv.onclick = function() {
     res.innerHTML = res.innerHTML+'/';
-    current_op = '/';
 };
 
 btnLef.onclick = function() {
@@ -69,15 +66,27 @@ btnSum.onclick = function() {
     res.innerHTML = res.innerHTML+'+';
 };
 
+btnVar.onclick = function(){
+  res.innerHTML = res.innerHTML+ 'x';
+};
+
 /*Do math.*/
 btnEql.onclick = function() {
   var q = ParseExpression(res.innerHTML);
-  res.innerHTML = CalcStack(q);
+  console.log(q);
+  if(q.includes('x'))
+  {
+    drawPlot(q,CalcStackX,100);
+  }
+  else{
+    res.innerHTML = CalcStack(q);
+  }
+
 };
 
 /*Setup regexp for parsing*/
-const reNum = /\d+/g;
-const re = /(\d+|\+|\-|\*|\/|\^|\(|\))/g;
+const reNum = /\d+/;
+const re = /(\d+|\+|\-|\*|\/|\^|\(|\)|x)/g;
 
 /**
  * Check if op2 has higher precended than op2 if so returns true
@@ -136,18 +145,19 @@ function check_prec(op1,op2)
  * @param {string} input_string - String in regular infix notaiton
  */
 function ParseExpression(input_string){
+  var q = [];
+  var s = [];
 
   var tokens = input_string.match(re);
-  //var tokens = "3+4*15/2".match(re); //res.innerHTML.match(re);
-  //var tokens = "3+4*2/(1−5)^2^3".match(re);
-  //var tokens = "3+4*(2-1)".match(re);
-  for(let o of tokens)
+
+  for(var o of tokens)
   {
+
     if(o == ' ')
     {
       continue;
     }
-    if(reNum.test(o))
+    if(reNum.test(o) || o == 'x')
     {
       q.push(o);
     }
@@ -168,6 +178,7 @@ function ParseExpression(input_string){
       }
     }
     else {
+
       /*Special case for first op*/
       if(s.length <= 0)
       {
@@ -189,7 +200,7 @@ function ParseExpression(input_string){
   {
     q.push(s.pop());
   }
-  console.log(q);
+
   return q;
 
 }
@@ -230,5 +241,119 @@ function CalcStack(stack)
       break;
       }
   }
-  return new_stack[0];
+
+    return new_stack[0];
+
+}
+
+/**
+ * Evaluates a stack of infix reverse polish notation array using a vale for variable
+ * @param {array} p with operators
+ * @param {Number} xval the nr to set variable to.
+ */
+function CalcStackX(p,xval)
+{
+  console.log(" i got stack"+p + "xval:"+xval);
+  stack = p.slice(0);
+  for(let i = 0; i < stack.length; i++)
+  {
+    if(stack[i] == 'x')
+    {
+      stack[i] = Number(xval);
+    }
+  }
+  console.log(" i got stack"+stack);
+
+
+  var new_stack = [];
+
+  while(stack.length > 0 )
+  {
+      var p = stack.shift();
+      switch(p){
+      case '*':
+      var op1 = Number(new_stack.pop());
+      var op2 = Number(new_stack.pop());
+        new_stack.push(op2*op1);
+      break;
+      case '+':
+      var op1 = Number(new_stack.pop());
+      var op2 = Number(new_stack.pop());
+      new_stack.push(op2+op1);
+      break;
+      case '-':
+      var op1 = Number(new_stack.pop());
+      var op2 = Number(new_stack.pop());
+      new_stack.push(op2-op1);
+      break;
+      case '/':
+      var op1 = Number(new_stack.pop());
+      var op2 = Number(new_stack.pop());
+      console.log("Res will be " + op2 + " / " + op1);
+      if(op1 !=0)
+      {
+        new_stack.push(op2/op1);
+      }
+      else{
+        return 0;
+      }
+      break;
+      // case 'x':
+      //   new_stack.push(Number(xval));
+      default:
+        new_stack.push(p);
+      break;
+      }
+  }
+
+    return new_stack[0];
+}
+
+function drawPlot(stack,fun,n){
+  /* implementation mainy from: https://gist.github.com/benjchristensen/2579599*/
+
+  // define dimensions of graph
+  var m = [80, 80, 80, 80]; // margins
+  var w = 1000 - m[1] - m[3]; // width
+  var h = 400 - m[0] - m[2]; // height
+
+  var data = Array.from(Array(n).keys());
+  var x = d3.scaleLinear().domain([0, data.length]).range([0, w]);
+  var y = d3.scaleLinear().domain([0, 10]).range([h, 0]);
+
+  var line = d3.line()
+    // set x
+    .x(function(d,i) {
+      return x(i);
+    })
+    .y(function(d) {
+      // verbose logging to show what's actually being done
+      let val = fun(stack,d);
+      console.log('Plotting Y value for data point: ' + d + ' to be at: ' + val + " using our yScale.");
+      // return the Y coordinate where we want to plot this datapoint
+      return val;
+    })
+    // Add an SVG element with the desired dimensions and margin.
+    var graph = d3.select("#graph").append("svg:svg")
+          .attr("width", w + m[1] + m[3])
+          .attr("height", h + m[0] + m[2])
+        .append("svg:g")
+          .attr("transform", "translate(" + m[3] + "," + m[0] + ")");
+
+    var xAxis = d3.axisBottom().scale(x);
+
+    graph.append("svg:g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + h + ")")
+          .call(xAxis);
+
+    var yAxis = d3.axisLeft().scale(y);
+
+    /*TODO FIx so that same plot is reused.*/
+    graph.append("svg:g")
+          .attr("class", "y axis")
+          .attr("transform", "translate(-25,0)")
+          .call(yAxis);
+
+      graph.append("svg:path").attr("d", line(data));
 }
