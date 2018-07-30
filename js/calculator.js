@@ -253,7 +253,7 @@ function CalcStack(stack)
  */
 function CalcStackX(p,xval)
 {
-  console.log(" i got stack"+p + "xval:"+xval);
+
   stack = p.slice(0);
   for(let i = 0; i < stack.length; i++)
   {
@@ -262,7 +262,7 @@ function CalcStackX(p,xval)
       stack[i] = Number(xval);
     }
   }
-  console.log(" i got stack"+stack);
+
 
 
   var new_stack = [];
@@ -289,7 +289,7 @@ function CalcStackX(p,xval)
       case '/':
       var op1 = Number(new_stack.pop());
       var op2 = Number(new_stack.pop());
-      console.log("Res will be " + op2 + " / " + op1);
+
       if(op1 !=0)
       {
         new_stack.push(op2/op1);
